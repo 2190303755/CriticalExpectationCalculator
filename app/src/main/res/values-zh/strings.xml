@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">暴击期望计算器</string>
+    <string name="percentage_description">%s（%%）</string>
+    <string name="critical_rate">暴击率</string>
+    <string name="critical_damage">暴击伤害</string>
+    <string name="artifact_critical_rate">圣遗物暴击率</string>
+    <string name="artifact_critical_damage">圣遗物暴击伤害</string>
+    <string name="unknown">未知</string>
+    <string name="main_lore">理之冠主词条</string>
+    <string name="result">计算结果</string>
+    <string name="expectation">暴击期望</string>
+    <string name="character">角色属性</string>
+    <string name="enhancement">强化次数</string>
+    <string name="environment">其他加成</string>
+    <string name="flower">生之花</string>
+    <string name="plume">死之羽</string>
+    <string name="sands">时之沙</string>
+    <string name="goblet">空之杯</string>
+    <string name="circlet">理之冠</string>
+</resources>

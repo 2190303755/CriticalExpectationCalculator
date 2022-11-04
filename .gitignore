@@ -1,3 +1,6 @@
+.vs
+.idea
+.gitignore
 # Built application files
 *.apk
 *.aar

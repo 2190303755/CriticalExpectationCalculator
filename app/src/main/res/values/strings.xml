@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Critical Expectation Calculator</string>
+    <string name="percentage_1" translatable="false">%.1f</string>
+    <string name="percentage_5" translatable="false">%.5f</string>
+    <string name="percentage_description">%s(%%)</string>
+    <string name="critical_rate">Critical Rate</string>
+    <string name="critical_damage">Critical Damage</string>
+    <string name="artifact_critical_rate">Artifact Critical Rate</string>
+    <string name="artifact_critical_damage">Artifact Critical Damage</string>
+    <string name="unknown">Unknown</string>
+    <string name="main_lore">Main Lore of Circlet of Logos</string>
+    <string name="result">Result</string>
+    <string name="expectation">Critical Expectation</string>
+    <string name="character">Character</string>
+    <string name="enhancement">Enhancement</string>
+    <string name="environment">Environment</string>
+    <string name="flower">Flower of Life</string>
+    <string name="plume">Plume of Death</string>
+    <string name="sands">Sands of Eon</string>
+    <string name="goblet">Goblet of Eonothem</string>
+    <string name="circlet">Circlet of Logos</string>
+</resources>
