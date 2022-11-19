@@ -21,9 +21,7 @@ const val DOUBLE_0_01 = 0.01
 const val DOUBLE_0_0001 = 0.0001
 const val DOUBLE_100 = 100.0
 
-const val STRING_0 = "0"
-const val STRING_5 = "5"
-const val STRING_50 = "50"
+const val STRING_EMPTY = ""
 const val STRING_NAV_MODE = "navigation_mode"
 const val INDICATOR_NAV_MODE_ANDROID = INT_2
 const val INDICATOR_NAV_MODE_HARMONY = 105

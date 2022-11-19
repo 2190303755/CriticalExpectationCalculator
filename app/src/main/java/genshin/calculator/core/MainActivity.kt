@@ -17,11 +17,7 @@ import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -52,7 +48,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-        viewModel.update()
         val percentageKeyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done
         )
@@ -80,6 +75,7 @@ class MainActivity : ComponentActivity() {
                     TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
                 val sliderRange = FLOAT_0..FLOAT_5
                 val keyboardController = LocalSoftwareKeyboardController.current
+                val keyboardActions = KeyboardActions { keyboardController?.hide() }
                 systemBarsInsets.observeAsState().value!!.let { insets ->
                     Scaffold(
                         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -110,25 +106,12 @@ class MainActivity : ComponentActivity() {
                                 .padding(rootPadding)
                                 .verticalScroll(rememberScrollState())
                         ) {
-                            val expectation = viewModel.expectation.observeAsState()
-                            val artifactRate = viewModel.artifactRate.observeAsState()
-                            val artifactDamage = viewModel.artifactDamage.observeAsState()
-                            val artifactType = viewModel.artifactType.observeAsState()
-                            val characterRate = viewModel.characterRate.observeAsState()
-                            val characterDamage = viewModel.characterDamage.observeAsState()
-                            val environmentRate = viewModel.environmentRate.observeAsState()
-                            val environmentDamage = viewModel.environmentDamage.observeAsState()
-                            val inputCharacterRate = viewModel.inputCharacterRate.observeAsState()
-                            val inputCharacterDamage =
-                                viewModel.inputCharacterDamage.observeAsState()
-                            val inputEnvironmentRate =
-                                viewModel.inputEnvironmentRate.observeAsState()
-                            val inputEnvironmentDamage =
-                                viewModel.inputEnvironmentDamage.observeAsState()
-                            var characterRateError by remember { mutableStateOf(false) }
-                            var characterDamageError by remember { mutableStateOf(false) }
-                            var environmentRateError by remember { mutableStateOf(false) }
-                            var environmentDamageError by remember { mutableStateOf(false) }
+                            val result = viewModel.result.observeAsState(viewModel.calculate())
+                            val characterRate = viewModel.characterRate.observeInputAsState()
+                            val characterDamage = viewModel.characterDamage.observeInputAsState()
+                            val environmentRate = viewModel.environmentRate.observeInputAsState()
+                            val environmentDamage =
+                                viewModel.environmentDamage.observeInputAsState()
                             val flowerTimes = viewModel.flowerTimes.observeAsState()
                             val plumeTimes = viewModel.plumeTimes.observeAsState()
                             val sandsTimes = viewModel.sandsTimes.observeAsState()
@@ -153,22 +136,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 footer = {
                                     IconButton(onClick = {
-                                        viewModel.inputCharacterRate.value?.toDoubleOrNull()?.let {
-                                            viewModel.characterRate.value = it
-                                        }
-                                        viewModel.inputCharacterDamage.value?.toDoubleOrNull()
-                                            ?.let {
-                                                viewModel.characterDamage.value = it
-                                            }
-                                        viewModel.inputEnvironmentRate.value?.toDoubleOrNull()
-                                            ?.let {
-                                                viewModel.environmentRate.value = it
-                                            }
-                                        viewModel.inputEnvironmentDamage.value?.toDoubleOrNull()
-                                            ?.let {
-                                                viewModel.environmentDamage.value = it
-                                            }
-                                        viewModel.update()
+                                        viewModel.result.value = viewModel.calculate()
                                         viewModel.resultExpanded.value = true
                                     }) {
                                         Icon(Icons.Outlined.Refresh, null)
@@ -177,7 +145,7 @@ class MainActivity : ComponentActivity() {
                                 SubInfoRow(stringResource(R.string.expectation)) {
                                     Text(
                                         text = stringResource(
-                                            R.string.percentage_5, expectation.value!!
+                                            R.string.percentage_5, result.value.expectation
                                         )
                                     )
                                 }
@@ -190,7 +158,7 @@ class MainActivity : ComponentActivity() {
                                     Text(
                                         text = stringResource(
                                             R.string.percentage_1,
-                                            characterRate.value!! + environmentRate.value!! + artifactRate.value!!
+                                            viewModel.extraRate() + result.value.rate
                                         )
                                     )
                                 }
@@ -203,13 +171,13 @@ class MainActivity : ComponentActivity() {
                                     Text(
                                         text = stringResource(
                                             R.string.percentage_1,
-                                            characterDamage.value!! + environmentDamage.value!! + artifactDamage.value!!
+                                            viewModel.extraDamage() + result.value.damage
                                         )
                                     )
                                 }
                                 SubInfoRow(stringResource(R.string.main_lore)) {
                                     Text(
-                                        text = when (artifactType.value!!) {
+                                        text = when (result.value.type) {
                                             INT_1 -> stringResource(R.string.critical_damage)
                                             INT_2 -> stringResource(R.string.critical_rate)
                                             else -> stringResource(R.string.unknown)
@@ -224,7 +192,7 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     Text(
                                         text = stringResource(
-                                            R.string.percentage_1, artifactRate.value!!
+                                            R.string.percentage_1, result.value.rate
                                         )
                                     )
                                 }
@@ -236,7 +204,7 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     Text(
                                         text = stringResource(
-                                            R.string.percentage_1, artifactDamage.value!!
+                                            R.string.percentage_1, result.value.damage
                                         )
                                     )
                                 }
@@ -262,21 +230,21 @@ class MainActivity : ComponentActivity() {
                                         stringResource(R.string.critical_rate)
                                     )
                                 ) {
-                                    OutlinedTextField(value = inputCharacterRate.value!!,
+                                    OutlinedTextField(
+                                        value = characterRate.value,
                                         onValueChange = {
-                                            viewModel.inputCharacterRate.value = it
-                                            val value = it.toDoubleOrNull()
-                                            if (value == null) {
-                                                characterRateError = true
-                                            } else {
-                                                characterRateError = false
-                                                viewModel.characterRate.value = value
-                                                viewModel.update()
+                                            viewModel.characterRate.apply {
+                                                val temp = data
+                                                value = it
+                                                if (data != temp) {
+                                                    viewModel.result.value = viewModel.calculate()
+                                                }
                                             }
                                         },
-                                        isError = characterRateError,
+                                        isError = viewModel.characterRate.error,
                                         keyboardOptions = percentageKeyboardOptions,
-                                        keyboardActions = KeyboardActions { keyboardController?.hide() })
+                                        keyboardActions = keyboardActions
+                                    )
                                 }
                                 SubInfoRow(
                                     stringResource(
@@ -284,21 +252,21 @@ class MainActivity : ComponentActivity() {
                                         stringResource(R.string.critical_damage)
                                     )
                                 ) {
-                                    OutlinedTextField(value = inputCharacterDamage.value!!,
+                                    OutlinedTextField(
+                                        value = characterDamage.value,
                                         onValueChange = {
-                                            viewModel.inputCharacterDamage.value = it
-                                            val value = it.toDoubleOrNull()
-                                            if (value == null) {
-                                                characterDamageError = true
-                                            } else {
-                                                characterDamageError = false
-                                                viewModel.characterDamage.value = value
-                                                viewModel.update()
+                                            viewModel.characterDamage.apply {
+                                                val temp = data
+                                                value = it
+                                                if (data != temp) {
+                                                    viewModel.result.value = viewModel.calculate()
+                                                }
                                             }
                                         },
-                                        isError = characterDamageError,
+                                        isError = viewModel.characterDamage.error,
                                         keyboardOptions = percentageKeyboardOptions,
-                                        keyboardActions = KeyboardActions { keyboardController?.hide() })
+                                        keyboardActions = keyboardActions
+                                    )
                                 }
                             }
                             Expander(
@@ -320,7 +288,7 @@ class MainActivity : ComponentActivity() {
                                     Slider(
                                         value = flowerTimes.value!!, onValueChange = {
                                             viewModel.flowerTimes.value = it
-                                            viewModel.update()
+                                            viewModel.result.value = viewModel.calculate()
                                         }, valueRange = sliderRange, steps = INT_4
                                     )
                                 }
@@ -328,7 +296,7 @@ class MainActivity : ComponentActivity() {
                                     Slider(
                                         value = plumeTimes.value!!.toFloat(), onValueChange = {
                                             viewModel.plumeTimes.value = it
-                                            viewModel.update()
+                                            viewModel.result.value = viewModel.calculate()
                                         }, valueRange = sliderRange, steps = INT_4
                                     )
                                 }
@@ -336,7 +304,7 @@ class MainActivity : ComponentActivity() {
                                     Slider(
                                         value = sandsTimes.value!!, onValueChange = {
                                             viewModel.sandsTimes.value = it
-                                            viewModel.update()
+                                            viewModel.result.value = viewModel.calculate()
                                         }, valueRange = sliderRange, steps = INT_4
                                     )
                                 }
@@ -344,7 +312,7 @@ class MainActivity : ComponentActivity() {
                                     Slider(
                                         value = gobletTimes.value!!, onValueChange = {
                                             viewModel.gobletTimes.value = it
-                                            viewModel.update()
+                                            viewModel.result.value = viewModel.calculate()
                                         }, valueRange = sliderRange, steps = INT_4
                                     )
                                 }
@@ -352,7 +320,7 @@ class MainActivity : ComponentActivity() {
                                     Slider(
                                         value = circletTimes.value!!, onValueChange = {
                                             viewModel.circletTimes.value = it
-                                            viewModel.update()
+                                            viewModel.result.value = viewModel.calculate()
                                         }, valueRange = sliderRange, steps = INT_4
                                     )
                                 }
@@ -378,21 +346,21 @@ class MainActivity : ComponentActivity() {
                                         stringResource(R.string.critical_rate)
                                     )
                                 ) {
-                                    OutlinedTextField(value = inputEnvironmentRate.value!!,
+                                    OutlinedTextField(
+                                        value = environmentRate.value,
                                         onValueChange = {
-                                            viewModel.inputEnvironmentRate.value = it
-                                            val value = it.toDoubleOrNull()
-                                            if (value == null) {
-                                                environmentRateError = true
-                                            } else {
-                                                environmentRateError = false
-                                                viewModel.environmentRate.value = value
-                                                viewModel.update()
+                                            viewModel.environmentRate.apply {
+                                                val temp = data
+                                                value = it
+                                                if (data != temp) {
+                                                    viewModel.result.value = viewModel.calculate()
+                                                }
                                             }
                                         },
-                                        isError = environmentRateError,
+                                        isError = viewModel.environmentRate.error,
                                         keyboardOptions = percentageKeyboardOptions,
-                                        keyboardActions = KeyboardActions { keyboardController?.hide() })
+                                        keyboardActions = keyboardActions
+                                    )
                                 }
                                 SubInfoRow(
                                     stringResource(
@@ -400,21 +368,21 @@ class MainActivity : ComponentActivity() {
                                         stringResource(R.string.critical_damage)
                                     )
                                 ) {
-                                    OutlinedTextField(value = inputEnvironmentDamage.value!!,
+                                    OutlinedTextField(
+                                        value = environmentDamage.value,
                                         onValueChange = {
-                                            viewModel.inputEnvironmentDamage.value = it
-                                            val value = it.toDoubleOrNull()
-                                            if (value == null) {
-                                                environmentDamageError = true
-                                            } else {
-                                                environmentDamageError = false
-                                                viewModel.environmentDamage.value = value
-                                                viewModel.update()
+                                            viewModel.environmentDamage.apply {
+                                                val temp = data
+                                                value = it
+                                                if (data != temp) {
+                                                    viewModel.result.value = viewModel.calculate()
+                                                }
                                             }
                                         },
-                                        isError = environmentDamageError,
+                                        isError = viewModel.environmentDamage.error,
                                         keyboardOptions = percentageKeyboardOptions,
-                                        keyboardActions = KeyboardActions { keyboardController?.hide() })
+                                        keyboardActions = keyboardActions
+                                    )
                                 }
                             }
                         }
